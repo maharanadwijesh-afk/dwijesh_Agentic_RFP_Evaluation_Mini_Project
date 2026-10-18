@@ -1,0 +1,4 @@
+streamlit>=1.36
+pypdf>=4.2
+openai>=1.40.0
+reportlab>=4.2
