@@ -148,9 +148,147 @@ def persist(run_id, results):
                  r["absolute_score"], r["ppi"], r["final_rank"], json.dumps(r)))
 
 st.set_page_config(page_title="Agentic RFP Evaluator", page_icon="📄", layout="wide")
+st.markdown("""
+<style>
+    :root {
+        --rfp-ink: #202747;
+        --rfp-muted: #66708a;
+        --rfp-indigo: #5546d7;
+        --rfp-teal: #12a89a;
+    }
+    [data-testid="stAppViewContainer"] {
+        background: linear-gradient(180deg, #f1f1ff 0, #f8f9fd 360px, #f8f9fd 100%);
+        color: var(--rfp-ink);
+    }
+    [data-testid="stSidebar"] {
+        background: linear-gradient(165deg, #f0efff 0%, #f5fbff 55%, #effbf8 100%);
+        border-right: 1px solid #e5e7f3;
+    }
+    [data-testid="stSidebar"] h2 {
+        color: #4236aa;
+    }
+    .rfp-hero {
+        position: relative;
+        overflow: hidden;
+        margin: 0 0 1.5rem;
+        padding: 2rem 2.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        border-radius: 24px;
+        background: linear-gradient(118deg, #4035ad 0%, #6652df 52%, #1da9a0 115%);
+        box-shadow: 0 16px 38px rgba(71, 68, 174, 0.2);
+        color: white;
+    }
+    .rfp-hero:after {
+        position: absolute;
+        top: -90px;
+        right: -35px;
+        width: 260px;
+        height: 260px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        content: "";
+    }
+    .rfp-eyebrow {
+        margin: 0 0 0.55rem;
+        color: #c9fff3;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+    .rfp-hero h1 {
+        position: relative;
+        z-index: 1;
+        margin: 0;
+        color: white;
+        font-size: clamp(1.7rem, 3vw, 2.45rem);
+        font-weight: 750;
+        letter-spacing: -0.035em;
+        line-height: 1.15;
+    }
+    .rfp-hero p {
+        position: relative;
+        z-index: 1;
+        max-width: 740px;
+        margin: 0.7rem 0 0;
+        color: #e8eaff;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    [data-testid="stMetric"] {
+        padding: 1rem 1.1rem;
+        border: 1px solid #e7e7f5;
+        border-radius: 16px;
+        background: linear-gradient(145deg, #fff 0%, #f4f4ff 100%);
+        box-shadow: 0 5px 18px rgba(44, 48, 103, 0.06);
+    }
+    [data-testid="stMetricLabel"] {
+        color: var(--rfp-muted);
+        font-weight: 600;
+    }
+    [data-testid="stMetricValue"] {
+        color: #4d40c3;
+    }
+    [data-testid="stTabs"] button[role="tab"] {
+        color: #5d6680;
+        font-weight: 650;
+    }
+    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: #4e40c8;
+    }
+    [data-testid="stFileUploader"] section {
+        border: 1px dashed #8e86e8;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #f6f4ff, #effbfa);
+    }
+    [data-testid="stExpander"] {
+        overflow: hidden;
+        border: 1px solid #e4e6f2;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.8);
+    }
+    [data-testid="stExpander"] summary:hover {
+        color: var(--rfp-indigo);
+    }
+    .stButton > button, .stDownloadButton > button {
+        border: 0;
+        border-radius: 11px;
+        background: linear-gradient(105deg, #5546d7, #287fc4);
+        color: white;
+        font-weight: 650;
+        box-shadow: 0 5px 13px rgba(78, 64, 200, 0.2);
+        transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+    .stButton > button:hover, .stDownloadButton > button:hover {
+        border: 0;
+        color: white;
+        box-shadow: 0 8px 18px rgba(78, 64, 200, 0.28);
+        transform: translateY(-1px);
+    }
+    [data-testid="stAlert"] {
+        border-radius: 12px;
+    }
+    h2, h3 {
+        color: #303a67;
+        letter-spacing: -0.02em;
+    }
+    @media (max-width: 640px) {
+        .rfp-hero {
+            padding: 1.5rem;
+            border-radius: 18px;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
 init_db()
-st.title("📄 Agentic RFP Evaluation & Supplier Ranking")
-st.caption("LLM-based proposal evaluation with evidence-grounded scores and deterministic Python ranking.")
+st.markdown("""
+<div class="rfp-hero">
+    <div class="rfp-eyebrow">Procurement intelligence · AI-assisted review</div>
+    <h1>📄 Agentic RFP Evaluation</h1>
+    <p>Compare supplier proposals with evidence-grounded scoring, clear benchmarks, and consistent rankings.</p>
+</div>
+""", unsafe_allow_html=True)
 
 with st.sidebar:
     st.header("LLM configuration")
@@ -218,40 +356,125 @@ with tab1:
     if "latest_results" in st.session_state:
         results = st.session_state["latest_results"]
         st.subheader("Leaderboard")
-        st.dataframe([{
+        metric_columns = st.columns(4)
+        metric_columns[0].metric("Suppliers evaluated", len(results))
+        metric_columns[1].metric("Top PPI", f"{results[0]['ppi']:.1f}%")
+        metric_columns[2].metric("Top absolute score", f"{results[0]['absolute_score']:.1f}%")
+        metric_columns[3].metric("Criteria compared", len(criteria))
+
+        rankings = [{
             "Rank": r["final_rank"], "Supplier": r["supplier_name"],
-            "Absolute score": r["absolute_score"], "PPI": r["ppi"],
-            "Submission date": r["submission_date"], "Experience": r["experience_rating"]
-        } for r in results], use_container_width=True, hide_index=True)
-        chosen = st.selectbox("Inspect supplier scorecard", [r["supplier_name"] for r in results])
-        selected = next(r for r in results if r["supplier_name"] == chosen)
-        st.subheader(f"Scorecard — {chosen}")
-        st.write(selected.get("overall_summary", ""))
-        st.dataframe([{
-            "Criterion": x["criterion"], "Score": x["score"], "Max": x["max_score"],
-            "Weight": x["weight"], "Benchmark": x["benchmark"], "Gap": x["gap"],
-            "Relative %": x["relative_percent"], "Evidence": x["evidence"],
-            "Justification": x["justification"]
-        } for x in selected["criteria"]], use_container_width=True, hide_index=True)
-        st.write("Risks:", selected.get("risks", []))
-        if selected.get("validation_warnings"):
-            st.warning("Validation warnings: " + "; ".join(selected["validation_warnings"]))
-        if selected.get("document_truncated"):
-            st.warning("Document text exceeded 60,000 characters and was truncated before evaluation.")
-        payload = {"rfp_run_id": st.session_state["latest_run_id"], "results": results}
-        st.download_button("Download complete result JSON", json.dumps(payload, indent=2), "rfp_results.json", "application/json")
+            "Absolute score (%)": r["absolute_score"], "PPI (%)": r["ppi"],
+            "Submission date": r["submission_date"], "Experience (1–10)": r["experience_rating"]
+        } for r in results]
+        ranking_config = {
+            "Rank": st.column_config.NumberColumn("Rank", format="%d"),
+            "Absolute score (%)": st.column_config.NumberColumn("Absolute score", format="%.1f"),
+            "PPI (%)": st.column_config.NumberColumn("PPI", format="%.1f"),
+            "Experience (1–10)": st.column_config.NumberColumn("Experience", format="%.1f"),
+        }
+
+        ranking_tab, comparison_tab, scorecard_tab = st.tabs(
+            ["Supplier rankings", "Criteria comparison", "Supplier scorecard"]
+        )
+        with ranking_tab:
+            st.dataframe(
+                rankings, use_container_width=True, hide_index=True,
+                column_config=ranking_config
+            )
+            st.caption("Rank is determined by PPI, submission date, experience rating, and supplier name.")
+
+        with comparison_tab:
+            comparison_rows = []
+            for criterion in criteria:
+                scores = {
+                    r["supplier_name"]: next(
+                        (x["score"] for x in r["criteria"]
+                         if x["criterion_id"] == criterion["criterion_id"]), 0
+                    )
+                    for r in results
+                }
+                comparison_rows.append({
+                    "Criterion": criterion["name"],
+                    "Weight (%)": criterion["weight"],
+                    "Max score": criterion["max_score"],
+                    **scores,
+                })
+            comparison_config = {
+                "Weight (%)": st.column_config.NumberColumn("Weight", format="%.1f"),
+                "Max score": st.column_config.NumberColumn("Max score", format="%.1f"),
+            }
+            for supplier in [r["supplier_name"] for r in results]:
+                comparison_config[supplier] = st.column_config.NumberColumn(
+                    supplier, format="%.1f"
+                )
+            st.dataframe(
+                comparison_rows, use_container_width=True, hide_index=True,
+                column_config=comparison_config
+            )
+            st.caption("Scores are shown against each criterion's maximum score; use the scorecard for evidence.")
+
+        with scorecard_tab:
+            chosen = st.selectbox(
+                "Inspect supplier scorecard",
+                [r["supplier_name"] for r in results],
+                key="scorecard_supplier",
+            )
+            selected = next(r for r in results if r["supplier_name"] == chosen)
+            st.subheader(f"Scorecard — {chosen}")
+            st.write(selected.get("overall_summary", ""))
+            scorecard_rows = [{
+                "Criterion": x["criterion"], "Score": x["score"], "Max": x["max_score"],
+                "Weight (%)": x["weight"], "Benchmark": x["benchmark"], "Gap": x["gap"],
+                "Relative (%)": x["relative_percent"], "Evidence": x["evidence"],
+                "Justification": x["justification"]
+            } for x in selected["criteria"]]
+            st.dataframe(
+                scorecard_rows, use_container_width=True, hide_index=True,
+                column_config={
+                    "Score": st.column_config.NumberColumn(format="%.1f"),
+                    "Max": st.column_config.NumberColumn(format="%.1f"),
+                    "Weight (%)": st.column_config.NumberColumn("Weight", format="%.1f"),
+                    "Benchmark": st.column_config.NumberColumn(format="%.1f"),
+                    "Gap": st.column_config.NumberColumn(format="%.1f"),
+                    "Relative (%)": st.column_config.NumberColumn("Relative", format="%.1f"),
+                    "Evidence": st.column_config.TextColumn(width="large"),
+                    "Justification": st.column_config.TextColumn(width="large"),
+                },
+                height=min(600, 110 + len(scorecard_rows) * 90),
+            )
+            st.write("Risks:", selected.get("risks", []))
+            if selected.get("validation_warnings"):
+                st.warning("Validation warnings: " + "; ".join(selected["validation_warnings"]))
+            if selected.get("document_truncated"):
+                st.warning("Document text exceeded 60,000 characters and was truncated before evaluation.")
+            payload = {"rfp_run_id": st.session_state["latest_run_id"], "results": results}
+            st.download_button("Download complete result JSON", json.dumps(payload, indent=2), "rfp_results.json", "application/json")
 
 with tab2:
     with connect() as conn:
         runs = [dict(r) for r in conn.execute("SELECT * FROM rfp_runs ORDER BY created_at DESC LIMIT 25").fetchall()]
         saved = [dict(r) for r in conn.execute("SELECT * FROM supplier_results ORDER BY result_id DESC LIMIT 100").fetchall()]
     st.subheader("Recent runs")
-    st.dataframe(runs, use_container_width=True, hide_index=True)
+    st.dataframe(
+        [{"Run ID": r["rfp_run_id"], "Created": r["created_at"], "Status": r["status"]} for r in runs],
+        use_container_width=True, hide_index=True,
+        column_config={"Run ID": st.column_config.TextColumn(width="large")}
+    )
     st.subheader("Saved supplier results")
     if saved:
-        st.dataframe([{"Run ID": r["rfp_run_id"], "Supplier": r["supplier_name"], "Rank": r["final_rank"],
-                       "Absolute score": r["absolute_score"], "PPI": r["ppi"]} for r in saved],
-                     use_container_width=True, hide_index=True)
+        st.dataframe(
+            [{"Run ID": r["rfp_run_id"], "Supplier": r["supplier_name"], "Rank": r["final_rank"],
+              "Absolute score (%)": r["absolute_score"], "PPI (%)": r["ppi"]}
+             for r in saved],
+            use_container_width=True, hide_index=True,
+            column_config={
+                "Run ID": st.column_config.TextColumn(width="large"),
+                "Rank": st.column_config.NumberColumn(format="%d"),
+                "Absolute score (%)": st.column_config.NumberColumn("Absolute score", format="%.1f"),
+                "PPI (%)": st.column_config.NumberColumn("PPI", format="%.1f"),
+            }
+        )
     else:
         st.caption("No completed runs yet.")
 
